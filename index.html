@@ -1,61 +1,114 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Ms Merriweather</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <div class="container">
-      <h1 id="temp">
-        <!--Temp -->
-      </h1>
-      <p id="desc">
-        <!-- description -->
-      </p>
-      <form id="form">
-        <input 
-          id="zip" 
-          type="number" 
-          placeholder="zip code"
-          title="Please Enter a valid Zip Code"
-          pattern="^\d{5}(?:[-\s]\d{4})?$"
-        >
-        <button type="submit">Search</button>
-      </form>
+
+<head>
+  <title>Ms Merriweather</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1 id="temp">
+      <img id="icon" alt="weather icon">
+    </h1>
+    <p id="desc">
+    <div class="details">
+      <p><span id="humidity"></span></p>
+      <p><span id="temp_max"></span></p>
+      <p><span id="temp_min"></span></p>
     </div>
+    </p>
+    <form id="zipForm">
+      <input id="zip" type="number" placeholder="zip code" title="Please Enter a valid Zip Code"
+        pattern="^\d{5}(?:[-\s]\d{4})?$">
+      <button type="submit">Enter Zipcode</button>
+    </form>
+    <form id="cityForm">
+      <input id="city" type="text" placeholder="city name" title="Please Enter a valid City Name">
+      <button type="submit">Enter City</button>
+    </form>
+    <button id="geoBtn">Use My Location</button>
+  </div>
+  <script src="index.js"></script>
+  <script>
+    const elements = {
+      temp: document.getElementById("temp"),
+      desc: document.getElementById("desc"),
+      humidity: document.getElementById("humidity"),
+      tempMax: document.getElementById("temp_max"),
+      tempMin: document.getElementById("temp_min"),
+      icon: document.getElementById("icon"),
+      zipForm: document.getElementById("zipForm"),
+      cityForm: document.getElementById("cityForm"),
+      geoBtn: document.getElementById("geoBtn"),
+      cityName: document.getElementById("cityName"),
+      unitSelect: document.getElementById('unitSelect'),
+    };
 
-    <script>
-      // ------------------------------------------------------
-      // Developer Code
+    const apiKey = "9e5773bbcccf5c298d2209b76a9b05e1";
 
-      // Get Element refererences
-      const tempEl = document.getElementById('temp')
-      const descEl = document.getElementById('desc')
-      const formEl = document.getElementById('form')
-      const zipInput = document.getElementById('zip')
+    function updateWeather(data) {
+      const { temperature, description, humidity, temp_max, temp_min, icon, city } = data;
 
-      // Define event listeners
-      formEl.addEventListener('submit', (e) => {
-        e.preventDefault()
-        const zip = zipInput.value
-        getWeather(zip)
-      })
+      elements.temp.textContent = temperature;
+      elements.desc.textContent = description;
+      elements.humidity.textContent = `Humidity: ${humidity}%`;
+      elements.tempMax.textContent = `High Temp: ${temp_max}°`;
+      elements.tempMin.textContent = `Low Temp: ${temp_min}°`;
+      elements.cityName.textContent = city;
 
-      // Functions 
-    function getWeather(zip) {
-      // Replace this with your own API key!
-      const apiKey = '467355df4c808dd6134a3b64e9ace282'
-      const units = 'imperial'
-      const path = `https://api.openweathermap.org/data/2.5/weather?zip=${zip}&appid=${apiKey}&units=${units}`
-      fetch(path)
-        .then(res => res.json())
-        .then(json => {
-          tempEl.innerHTML = json.main.temp
-          descEl.innerHTML = json.weather[0].description
-        })
-        .catch(err => console.log(err.message))
+      elements.icon.style.display = icon ? "block" : "none";
+      if (icon) {
+        elements.icon.src = `https://openweathermap.org/img/w/${icon}.png`;
+      }
+
+      elements.humidity.style.visibility = "visible";
+      elements.tempMax.style.visibility = "visible";
+      elements.tempMin.style.visibility = "visible";
     }
-           
-    </script>
-  </body>
+
+    function onError(error) {
+      console.error("Error:", error);
+    }
+
+    function fetchWeatherByInput(input) {
+      const value = input.value.trim();
+      if (value) {
+        if (input === elements.zipForm.zip) {
+          getWeatherByZip(apiKey, value)
+            .then(updateWeather)
+            .catch(onError);
+        } else if (input === elements.cityForm.city) {
+          getWeatherByCity(apiKey, value)
+            .then(updateWeather)
+            .catch(onError);
+        }
+      }
+    }
+
+    elements.zipForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetchWeatherByInput(elements.zipForm.zip);
+    });
+
+    elements.cityForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetchWeatherByInput(elements.cityForm.city);
+    });
+
+    elements.geoBtn.addEventListener("click", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude: lat, longitude: lon } = position.coords;
+          getWeatherByGeo(apiKey, { lat, lon })
+            .then(updateWeather)
+            .catch(onError);
+        });
+      } else {
+        console.log("Geolocation is not supported by this browser.");
+      }
+    });
+  </script>
+</body>
+
 </html>
